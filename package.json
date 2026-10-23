@@ -1,0 +1,23 @@
+{
+  "name": "sankhya-integracao-pedidos",
+  "version": "1.0.0",
+  "description": "Aplicação local para integração de pedidos de venda com ERP Sankhya (TOP 3100) via Sandbox",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch-path=src src/server.js"
+  },
+  "keywords": [
+    "sankhya",
+    "erp",
+    "pedidos",
+    "express",
+    "node"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}

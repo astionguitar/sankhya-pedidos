@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Integrador Sankhya - Cadastro de Pedidos de Venda</title>
+  <meta name="description" content="Aplicação local para integração de pedidos de venda no ERP Sankhya via Sandbox, com seleção dinâmica do Tipo de Operação (TOP)">
+  <!-- Tipografia Moderna -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Estilos da Aplicação -->
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Cabeçalho Principal -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-badge">
+          <span class="badge-icon">⚡</span>
+          <span class="badge-text">Sankhya ERP Gateway</span>
+        </div>
+        <h1 class="header-title">Integrador de Pedidos de Venda</h1>
+        <p class="header-subtitle">Ambiente Sandbox &bull; Tipo de Operação escolhido no pedido</p>
+      </div>
+
+      <!-- Card de Status do Sandbox -->
+      <div class="sandbox-status-card" id="sandboxStatusCard">
+        <div class="status-indicator-group">
+          <span class="status-dot status-checking" id="statusDot"></span>
+          <div class="status-text-group">
+            <span class="status-title" id="statusTitle">Verificando ambiente...</span>
+            <span class="status-detail" id="statusDetail">Conectando ao backend local</span>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btnTestarConexao" title="Testa a autenticação e consulta de clientes na Sankhya">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          Testar Conexão
+        </button>
+      </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-grid">
+      <!-- Coluna da Esquerda: Dados do Cliente e Adição de Itens -->
+      <div class="flow-column">
+        
+        <!-- Passo 1: Identificação do Cliente -->
+        <section class="card flow-card" id="cardCliente">
+          <div class="card-header">
+            <div class="step-badge">1</div>
+            <div>
+              <h2 class="card-title">Cliente (Parceiro)</h2>
+              <p class="card-description">Informe o código CODPARC e consulte os dados no Sankhya Sandbox</p>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="form-row client-search-row">
+              <div class="form-group flex-1">
+                <label for="inputCodParc" class="form-label">
+                  Código do Cliente (CODPARC) <span class="required-mark">*</span>
+                </label>
+                <div class="input-with-button">
+                  <input 
+                    type="number" 
+                    id="inputCodParc" 
+                    class="form-input" 
+                    placeholder="Ex: 5, 7352 ou 8115"
+                    min="1"
+                    required
+                  >
+                  <button type="button" class="btn btn-primary" id="btnAbrirModalClientes" title="Abrir pesquisa de clientes cadastrados no Sankhya Sandbox">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    Pesquisar
+                  </button>
+                  <button type="button" class="btn btn-outline" id="btnConsultarCliente" title="Consultar diretamente pelo código informado">
+                    Consultar
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dados do Cliente Consultado -->
+            <div class="client-info-panel hidden" id="clientInfoPanel">
+              <div class="client-info-header">
+                <span class="badge badge-success">Cliente Identificado</span>
+                <span class="client-type-badge" id="clientTypeBadge">PF</span>
+              </div>
+              <div class="client-info-grid">
+                <div>
+                  <span class="info-label">Nome / Razão:</span>
+                  <span class="info-value font-bold" id="clientNome">-</span>
+                </div>
+                <div>
+                  <span class="info-label">CPF / CNPJ:</span>
+                  <span class="info-value" id="clientCpfCnpj">-</span>
+                </div>
+                <div class="client-details-full">
+                  <span class="info-label">Endereço:</span>
+                  <span class="info-value" id="clientEndereco">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Passo 2: Tipo de Operação (TOP) -->
+        <section class="card flow-card" id="cardTop">
+          <div class="card-header">
+            <div class="step-badge">2</div>
+            <div>
+              <h2 class="card-title">Tipo de Operação (TOP)</h2>
+              <p class="card-description">TOPs ativas de Pedido de Venda carregadas do Sankhya Sandbox</p>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="form-group">
+              <label for="inputTopBusca" class="form-label">
+                Pesquisar TOP por código ou descrição <span class="required-mark">*</span>
+              </label>
+              <div class="combo" id="topCombo">
+                <div class="input-with-button">
+                  <input
+                    type="text"
+                    id="inputTopBusca"
+                    class="form-input"
+                    placeholder="Ex: 3100 ou venda"
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-expanded="false"
+                    aria-controls="topListbox"
+                    autocomplete="off"
+                    disabled
+                  >
+                  <button type="button" class="btn btn-outline" id="btnRecarregarTops" title="Recarregar TOPs do Sankhya">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><polyline points="21 3 21 8 16 8"/></svg>
+                    Recarregar
+                  </button>
+                </div>
+                <ul class="combo-list hidden" id="topListbox" role="listbox" aria-label="Tipos de Operação disponíveis"></ul>
+              </div>
+              <span class="field-hint" id="topLoadStatus" aria-live="polite">Carregando TOPs...</span>
+            </div>
+
+            <!-- TOP selecionada -->
+            <div class="top-selected hidden" id="topSelecionadaPanel">
+              <div class="top-selected-header">
+                <span class="top-selected-code font-mono" id="topSelCodigo">-</span>
+                <span class="top-selected-name" id="topSelNome">-</span>
+              </div>
+              <div class="top-selected-badges" id="topSelBadges"></div>
+              <ul class="top-issues" id="topSelPendencias"></ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- Passo 3: Adição de Produtos -->
+        <section class="card flow-card" id="cardProdutos">
+          <div class="card-header">
+            <div class="step-badge">3</div>
+            <div>
+              <h2 class="card-title">Adicionar Produtos ao Pedido</h2>
+              <p class="card-description">Preencha os dados do item conforme cadastro no ERP</p>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <form id="formAdicionarItem" class="form-grid">
+              <!-- CODPROD -->
+              <div class="form-group" style="grid-column: span 2;">
+                <label for="inputCodProd" class="form-label">
+                  Código do Produto (CODPROD) <span class="required-mark">*</span>
+                </label>
+                <div class="input-with-button">
+                  <input 
+                    type="number" 
+                    id="inputCodProd" 
+                    class="form-input" 
+                    placeholder="Ex: 3, 100" 
+                    min="1"
+                    required
+                  >
+                  <button type="button" class="btn btn-primary" id="btnAbrirModalProdutos" title="Pesquisar produtos cadastrados no Sankhya Sandbox">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    Pesquisar
+                  </button>
+                </div>
+                <span class="field-hint" id="produtoInfoHint">Código numérico do produto (ou clique em Pesquisar)</span>
+              </div>
+
+              <!-- QUANTIDADE -->
+              <div class="form-group">
+                <label for="inputQuantidade" class="form-label">
+                  Quantidade (QTDNEG) <span class="required-mark">*</span>
+                </label>
+                <input 
+                  type="number" 
+                  id="inputQuantidade" 
+                  class="form-input" 
+                  placeholder="Ex: 1.00" 
+                  step="0.01" 
+                  min="0.01" 
+                  value="1"
+                  required
+                >
+                <span class="field-hint">Qtd negociada no pedido</span>
+              </div>
+
+              <!-- PREÇO UNITÁRIO -->
+              <div class="form-group">
+                <label for="inputValorUnitario" class="form-label">
+                  Preço Unitário (R$) <span class="required-mark">*</span>
+                </label>
+                <input 
+                  type="number" 
+                  id="inputValorUnitario" 
+                  class="form-input" 
+                  placeholder="Ex: 20.00" 
+                  step="0.01" 
+                  min="0.00" 
+                  required
+                >
+                <span class="field-hint">Valor unitário negociado</span>
+              </div>
+
+              <!-- LOCAL DE ESTOQUE -->
+              <div class="form-group">
+                <label for="inputLocalEstoque" class="form-label">
+                  Local de Estoque (CODLOCAL) <span class="required-mark">*</span>
+                </label>
+                <input 
+                  type="number" 
+                  id="inputLocalEstoque" 
+                  class="form-input" 
+                  placeholder="Ex: 20000000" 
+                  value="20000000"
+                  min="0"
+                  required
+                >
+                <span class="field-hint" id="localEstoqueHint">Local analítico (ex: 20000000 - CD, ou 0 sem local)</span>
+              </div>
+
+              <!-- CONTROLE -->
+              <div class="form-group">
+                <label for="inputControle" class="form-label">
+                  Controle do Item (CONTROLE)
+                </label>
+                <input 
+                  type="text" 
+                  id="inputControle" 
+                  class="form-input" 
+                  placeholder="Ex: NL ou deixe vazio" 
+                  value="NL"
+                  maxlength="20"
+                >
+                <span class="field-hint" id="controleHint">Controle TGFEST (ex: NL para abóbora, ou vazio)</span>
+              </div>
+
+              <div class="form-action-full">
+                <button type="submit" class="btn btn-primary" id="btnAdicionarItem">
+                  <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Adicionar Produto
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Coluna da Direita: Itens do Pedido, Resumo e Ação de Gerar -->
+      <div class="flow-column">
+        <section class="card flow-card summary-card" id="cardResumo">
+          <div class="card-header">
+            <div class="step-badge">4</div>
+            <div class="header-flex-between">
+              <div>
+                <h2 class="card-title">Itens do Pedido</h2>
+                <p class="card-description">Grade de produtos prontos para inclusão</p>
+              </div>
+              <span class="badge badge-neutral" id="itemCountBadge">0 itens</span>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <!-- Tabela de Itens -->
+            <div class="table-responsive">
+              <table class="items-table" id="tableItens">
+                <thead>
+                  <tr>
+                    <th style="width: 40px;">#</th>
+                    <th>Cód. Produto</th>
+                    <th>Local / Controle</th>
+                    <th class="text-right">Qtd</th>
+                    <th class="text-right">Preço Unit.</th>
+                    <th class="text-right">Subtotal</th>
+                    <th class="text-center" style="width: 50px;">Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="itensTableBody">
+                  <tr class="empty-row" id="emptyRow">
+                    <td colspan="7">
+                      <div class="empty-state">
+                        <span class="empty-icon">📦</span>
+                        <p class="empty-text">Nenhum produto adicionado ainda</p>
+                        <span class="empty-subtext">Preencha o formulário ao lado e clique em "Adicionar Produto"</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Resumo e Parâmetros Financeiros -->
+            <div class="financial-summary">
+              <div class="financial-header" style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Condição Financeira & Parcelamento
+                </span>
+              </div>
+              <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                <div class="form-group">
+                  <label for="selectTipoPagamento" class="form-label" style="font-size: 0.75rem;">
+                    Tipo de Título (CODTIPTIT) <span class="required-mark">*</span>
+                  </label>
+                  <select id="selectTipoPagamento" class="form-input form-select" style="font-size: 0.8rem; padding: 6px 10px;">
+                    <option value="16" selected>16 - DEPOSITO BANCARIO</option>
+                    <option value="2">2 - Dinheiro</option>
+                    <option value="4">4 - Boleto</option>
+                    <option value="43">43 - Cartão Crédito 1x</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="inputDataVencimento" class="form-label" style="font-size: 0.75rem;">
+                    Vencimento <span class="required-mark">*</span>
+                  </label>
+                  <input type="text" id="inputDataVencimento" class="form-input font-mono" style="font-size: 0.8rem; padding: 6px 10px;" placeholder="DD/MM/YYYY">
+                </div>
+              </div>
+
+              <div class="summary-line">
+                <span class="summary-label">Tipo de Operação:</span>
+                <span class="summary-value font-mono" id="summaryTop">Não selecionada</span>
+              </div>
+              <div class="summary-line">
+                <span class="summary-label">Nota Modelo:</span>
+                <span class="summary-value font-mono" id="summaryNotaModelo">-</span>
+              </div>
+              <div class="summary-line">
+                <span class="summary-label">Quantidade de Itens:</span>
+                <span class="summary-value font-mono" id="summaryTotalItens">0</span>
+              </div>
+              <div class="summary-divider"></div>
+              <div class="summary-line total-line">
+                <span class="total-label">Total Estimado:</span>
+                <span class="total-value" id="summaryTotalValor">R$ 0,00</span>
+              </div>
+            </div>
+
+            <!-- Botão de Ação Principal -->
+            <div class="order-action-container">
+              <button class="btn btn-success btn-lg btn-block" id="btnGerarPedido" disabled>
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Validar Pedido
+              </button>
+              <p class="order-action-note" id="orderActionNote">
+                Informe o cliente, escolha a TOP e adicione produtos para liberar a validação
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Card Educativo sobre o Fluxo -->
+        <section class="card info-card">
+          <div class="info-card-header">
+            <span class="info-icon">💡</span>
+            <h3 class="info-card-title">Como funciona a integração (Etapa 2)</h3>
+          </div>
+          <ul class="info-list">
+            <li><strong>Autenticação OAuth 2.0:</strong> O backend gera o token Bearer via Basic Auth e cabeçalho <code>X-Token</code>, renovando-o a cada 300 segundos.</li>
+            <li><strong>Consulta de Clientes:</strong> A busca valida o parceiro no endpoint oficial <code>/v1/parceiros/clientes</code> sem inventar estruturas.</li>
+            <li><strong>Seleção da TOP:</strong> A lista vem de <code>GET /v1/tipos-operacao?tipoMovimento=19</code>. Só TOPs ativas de Pedido de Venda aparecem.</li>
+            <li><strong>Nota Modelo:</strong> Cada TOP precisa de uma nota modelo configurada explicitamente no backend. Sem ela, a TOP não é aceita.</li>
+          </ul>
+        </section>
+      </div>
+    </main>
+
+    <!-- Modal de Confirmação do Pedido -->
+    <div class="modal-backdrop hidden" id="confirmModal">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 class="modal-title">Pedido Validado no Backend</h3>
+          <button type="button" class="modal-close" id="btnFecharModal" aria-label="Fechar">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-text">
+            A TOP foi revalidada no <strong>Sandbox da Sankhya</strong> e o payload abaixo foi montado pelo backend.
+          </p>
+
+          <div class="modal-details-card">
+            <div class="modal-detail-row">
+              <span>Cliente (CODPARC):</span>
+              <strong id="modalCodParc">-</strong>
+            </div>
+            <div class="modal-detail-row">
+              <span>Tipo de Operação:</span>
+              <strong id="modalTop">-</strong>
+            </div>
+            <div class="modal-detail-row">
+              <span>Nota Modelo:</span>
+              <strong id="modalNotaModelo">-</strong>
+            </div>
+            <div class="modal-detail-row">
+              <span>Empresa do Documento (CODEMP):</span>
+              <strong id="modalEmpresa">-</strong>
+            </div>
+            <div class="modal-detail-row">
+              <span>Empresa da Negociação (CODEMPNEGOC):</span>
+              <strong id="modalEmpresaNegociacao">-</strong>
+            </div>
+            <div class="modal-detail-row">
+              <span>Tipo de Negociação (CODTIPVENDA):</span>
+              <strong id="modalTipoVenda">-</strong>
+            </div>
+            <div class="modal-detail-row">
+              <span>Total de Itens:</span>
+              <strong id="modalTotalItens">0</strong>
+            </div>
+            <div class="modal-detail-row modal-total-row">
+              <span>Valor Total Estimado:</span>
+              <strong id="modalTotalValor">R$ 0,00</strong>
+            </div>
+          </div>
+
+          <div class="json-preview-container">
+            <span class="json-preview-label">Payload JSON gerado para a API:</span>
+            <pre class="json-preview font-mono" id="modalJsonPreview"></pre>
+          </div>
+
+          <div class="alert alert-info">
+            <span class="alert-icon">ℹ️</span>
+            <div>
+              <strong>Avisos da validação:</strong>
+              <ul class="modal-avisos" id="modalAvisos"></ul>
+            </div>
+          </div>
+
+          <!-- Salvaguarda: Confirmação Explícita de Envio -->
+          <div class="confirm-sandbox-box" style="margin-top: 14px; padding: 14px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-md);">
+            <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+              <input type="checkbox" id="chkConfirmarEnvioSandbox" style="width: 18px; height: 18px; margin-top: 2px; cursor: pointer; accent-color: var(--color-success);">
+              <div>
+                <span style="font-weight: 700; color: #34d399; font-size: 0.9rem;">Confirmo o envio real deste pedido ao ambiente Sankhya Sandbox</span>
+                <p style="font-size: 0.775rem; color: var(--text-secondary); margin-top: 4px;">
+                  Destino: <code>https://api.sandbox.sankhya.com.br/v1/vendas/pedidos</code>. Um único POST será executado. Sem repetição automática em caso de timeout.
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <!-- Painel de Retorno da Gravação -->
+          <div class="envio-resultado-panel hidden" id="envioResultadoPanel" style="margin-top: 16px; padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: #0f172a;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span id="envioResultadoIcon" style="font-size: 1.25rem;">⏳</span>
+                <strong id="envioResultadoTitulo" style="font-size: 0.95rem;">Processando requisição...</strong>
+              </div>
+              <span class="badge" id="envioResultadoStatusBadge">HTTP -</span>
+            </div>
+            <div class="modal-detail-row" id="rowNunotaRetornado" style="display: none; padding: 6px 0; border-top: 1px solid rgba(255,255,255,0.08);">
+              <span>Número do Pedido (NUNOTA / codigoPedido):</span>
+              <strong class="font-mono" id="txtNunotaRetornado" style="color: #38bdf8; font-size: 1.05rem;">-</strong>
+            </div>
+            <p id="envioResultadoMensagem" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 6px;"></p>
+            <div style="margin-top: 10px;">
+              <span style="font-size: 0.725rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Resposta Bruta do Sankhya Sandbox:</span>
+              <pre class="json-preview font-mono" id="envioResultadoJson" style="max-height: 140px; margin-top: 4px;"></pre>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCancelarModal">Fechar</button>
+          <button type="button" class="btn btn-success" id="btnConfirmarEmissao" disabled title="Marque a confirmação para habilitar o envio ao Sandbox">
+            Enviar Pedido ao Sankhya Sandbox
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Pesquisa de Clientes -->
+    <div class="modal-backdrop hidden" id="modalPesquisaClientes">
+      <div class="modal-dialog modal-dialog-lg">
+        <div class="modal-header">
+          <div class="modal-header-info">
+            <h3 class="modal-title">Pesquisar Clientes (Sankhya Sandbox)</h3>
+            <p class="modal-subtitle">Consulta oficial via <code>GET /v1/parceiros/clientes</code> (50 clientes por página)</p>
+          </div>
+          <button type="button" class="modal-close" id="btnFecharModalClientes" aria-label="Fechar">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-search-bar">
+            <div class="search-input-wrapper flex-1">
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input 
+                type="text" 
+                id="inputBuscaClienteModal" 
+                class="form-input modal-search-input" 
+                placeholder="Pesquisar por código (ex: 7352) ou nome/razão social..."
+                autocomplete="off"
+              >
+              <button type="button" class="btn-clear-search hidden" id="btnClearBuscaCliente" aria-label="Limpar busca">&times;</button>
+            </div>
+            <button type="button" class="btn btn-primary" id="btnBuscarClienteModal" title="Pesquisar clientes no Sankhya">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              Buscar
+            </button>
+            <div class="search-sort-group">
+              <label for="selectOrdemClientes" class="sort-label">Ordem:</label>
+              <select id="selectOrdemClientes" class="form-input form-select">
+                <option value="ASC">Crescente (ASC)</option>
+                <option value="DESC">Decrescente (DESC)</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-outline" id="btnRecarregarClientesModal" title="Recarregar clientes do Sankhya">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><polyline points="21 3 21 8 16 8"/></svg>
+              Recarregar
+            </button>
+          </div>
+
+          <div class="modal-limitation-alert">
+            <span class="alert-icon">ℹ️</span>
+            <span>Consulta oficial via API Sankhya (50 clientes por página). Digite o código para busca direta (ex: <strong>7352</strong>) ou parte do nome/razão social. Navegue pelas páginas ou alterne entre ordenação Crescente e Decrescente.</span>
+          </div>
+
+          <!-- Tabela de Resultados -->
+          <div class="modal-table-container">
+            <div class="modal-loading-overlay hidden" id="clientesLoadingOverlay">
+              <div class="spinner"></div>
+              <span>Consultando clientes no Sankhya Sandbox...</span>
+            </div>
+            <table class="items-table search-results-table" id="tableClientesModal">
+              <thead>
+                <tr>
+                  <th style="width: 95px;">CODPARC</th>
+                  <th>Nome do Parceiro</th>
+                  <th>Razão Social</th>
+                  <th style="width: 105px;" class="text-center">Situação</th>
+                  <th class="text-center" style="width: 110px;">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="clientesModalTableBody"></tbody>
+            </table>
+            <div class="empty-state hidden" id="clientesEmptyState">
+              <span class="empty-icon">🔍</span>
+              <p class="empty-text">Nenhum cliente encontrado</p>
+              <span class="empty-subtext" id="clientesEmptySubtext">Tente alterar o filtro ou navegar para outra página</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer modal-footer-between">
+          <div class="modal-pagination">
+            <button type="button" class="btn btn-outline btn-sm" id="btnClientePagAnterior" disabled>&larr; Anterior</button>
+            <span class="pagination-info" id="clientePaginaInfo">Página 1</span>
+            <button type="button" class="btn btn-outline btn-sm" id="btnClientePagProxima">Próxima &rarr;</button>
+          </div>
+          <button type="button" class="btn btn-secondary" id="btnCancelarModalClientes">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Pesquisa de Produtos -->
+    <div class="modal-backdrop hidden" id="modalPesquisaProdutos">
+      <div class="modal-dialog modal-dialog-lg">
+        <div class="modal-header">
+          <div class="modal-header-info">
+            <h3 class="modal-title">Pesquisar Produtos (Sankhya Sandbox)</h3>
+            <p class="modal-subtitle">Consulta oficial via <code>GET /v1/produtos</code> (50 produtos por página)</p>
+          </div>
+          <button type="button" class="modal-close" id="btnFecharModalProdutos" aria-label="Fechar">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-search-bar">
+            <div class="search-input-wrapper flex-1">
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input 
+                type="text" 
+                id="inputBuscaProdutoModal" 
+                class="form-input modal-search-input" 
+                placeholder="Pesquisar por código (ex: 1) ou parte da descrição (ex: ABOBRINHA)..."
+                autocomplete="off"
+              >
+              <button type="button" class="btn-clear-search hidden" id="btnClearBuscaProduto" aria-label="Limpar busca">&times;</button>
+            </div>
+            <button type="button" class="btn btn-primary" id="btnBuscarProdutoModal" title="Pesquisar produtos no Sankhya">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              Buscar
+            </button>
+            <button type="button" class="btn btn-outline" id="btnRecarregarProdutosModal" title="Recarregar produtos do Sankhya">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><polyline points="21 3 21 8 16 8"/></svg>
+              Recarregar
+            </button>
+          </div>
+
+          <div class="modal-limitation-alert">
+            <span class="alert-icon">ℹ️</span>
+            <span>Consulta oficial via API Sankhya (50 registros por página). Digite o código para busca exata imediata ou parte da descrição para filtrar. Navegue entre as páginas conforme necessário.</span>
+          </div>
+
+          <!-- Tabela de Resultados -->
+          <div class="modal-table-container">
+            <div class="modal-loading-overlay hidden" id="produtosLoadingOverlay">
+              <div class="spinner"></div>
+              <span>Consultando produtos no Sankhya Sandbox...</span>
+            </div>
+            <table class="items-table search-results-table" id="tableProdutosModal">
+              <thead>
+                <tr>
+                  <th style="width: 95px;">CODPROD</th>
+                  <th>Descrição do Produto (DESCRPROD)</th>
+                  <th style="width: 85px;" class="text-center">Unidade</th>
+                  <th style="width: 100px;" class="text-center">Situação</th>
+                  <th class="text-center" style="width: 110px;">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="produtosModalTableBody"></tbody>
+            </table>
+            <div class="empty-state hidden" id="produtosEmptyState">
+              <span class="empty-icon">📦</span>
+              <p class="empty-text">Nenhum produto encontrado</p>
+              <span class="empty-subtext" id="produtosEmptySubtext">Tente alterar o filtro ou navegar para outra página</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer modal-footer-between">
+          <div class="modal-pagination">
+            <button type="button" class="btn btn-outline btn-sm" id="btnProdutoPagAnterior" disabled>&larr; Anterior</button>
+            <span class="pagination-info" id="produtoPaginaInfo">Página 1</span>
+            <button type="button" class="btn btn-outline btn-sm" id="btnProdutoPagProxima">Próxima &rarr;</button>
+          </div>
+          <button type="button" class="btn btn-secondary" id="btnCancelarModalProdutos">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Container de Notificações Toast -->
+    <div class="toast-container" id="toastContainer"></div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
